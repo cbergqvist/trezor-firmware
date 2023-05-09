@@ -8,10 +8,10 @@ def configure(env, features_wanted, defines, sources):
     hw_model = get_hw_model_as_number('T1B1')
     hw_revision = 0
 
-    defines += [f'TREZOR_BOARD=\\"boards/{board}\\"', ]
-    defines += [f'HW_MODEL={hw_model}', ]
-    defines += [f'HW_REVISION={hw_revision}', ]
-    sources += [f'embed/trezorhal/displays/{display}', ]
+    defines += [f'TREZOR_BOARD=\\"boards/{board}\\"']
+    defines += [f'HW_MODEL={hw_model}']
+    defines += [f'HW_REVISION={hw_revision}']
+    sources += [f'embed/trezorhal/displays/{display}']
 
     if "input" in features_wanted:
         sources += ['embed/trezorhal/button.c']
