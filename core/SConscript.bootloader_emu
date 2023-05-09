@@ -8,7 +8,7 @@ TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 DMA2D = False
 
-if TREZOR_MODEL in ('1', 'DISC1', ):
+if TREZOR_MODEL in ('1', 'DISC1'):
     # skip bootloader build
     env = Environment()
     def build_bootloader(target,source,env):

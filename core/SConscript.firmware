@@ -33,7 +33,7 @@ if TREZOR_MODEL in ('1', 'R'):
     FONT_DEMIBOLD=None
     FONT_BOLD='Font_PixelOperator_Bold_8'
     FONT_MONO='Font_PixelOperatorMono_Regular_8'
-if TREZOR_MODEL in ('T', 'DISC1', ):
+if TREZOR_MODEL in ('T', 'DISC1'):
     FONT_NORMAL='Font_TTHoves_Regular_21'
     FONT_DEMIBOLD='Font_TTHoves_DemiBold_21'
     FONT_BOLD='Font_TTHoves_Bold_17'
@@ -432,7 +432,7 @@ env.Replace(
 env.Replace(
     TREZOR_MODEL=TREZOR_MODEL,)
 
-if TREZOR_MODEL in ('T', 'R', ):
+if TREZOR_MODEL in ('T', 'R'):
     CPU_ASFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16'
     CPU_CCFLAGS = '-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mtune=cortex-m4 '
     CPU_MODEL   = 'STM32F427xx'
@@ -579,7 +579,7 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/recovery.py'))
     if EVERYTHING:
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/fido.py'))
-    if TREZOR_MODEL in ('T', 'DISC1', ):
+    if TREZOR_MODEL in ('T', 'DISC1'):
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt_v2/__init__.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt_v2/homescreen.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/layouts/tt_v2/reset.py'))
@@ -713,7 +713,7 @@ def cargo_build():
         profile = ''
 
     # T1 does not have its own Rust feature, it shares it with TR
-    if  TREZOR_MODEL  in ('1', 'R', ):
+    if  TREZOR_MODEL  in ('1', 'R'):
         model_feature = 'model_tr'
     else:
         model_feature = 'model_tt'

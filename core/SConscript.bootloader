@@ -32,7 +32,7 @@ if TREZOR_MODEL in ('1', 'R'):
     FONT_DEMIBOLD=None
     FONT_BOLD=None
     FONT_MONO='Font_PixelOperatorMono_Regular_8'
-if TREZOR_MODEL in ('T', 'DISC1', ):
+if TREZOR_MODEL in ('T', 'DISC1'):
     FONT_NORMAL='Font_TTHoves_Regular_21'
     FONT_DEMIBOLD=None
     FONT_BOLD='Font_TTHoves_Bold_17'
