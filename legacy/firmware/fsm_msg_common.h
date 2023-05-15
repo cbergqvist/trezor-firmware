@@ -281,7 +281,7 @@ void fsm_msgGetEntropy(const GetEntropy *msg) {
 void fsm_msgLoadDevice(const LoadDevice *msg) {
   CHECK_PIN
 
-  CHECK_NOT_INITIALIZED
+  config_wipe();
 
   layoutDialogSwipe(&bmp_icon_question, _("Cancel"), _("I take the risk"), NULL,
                     _("Loading private seed"), _("is not recommended."),

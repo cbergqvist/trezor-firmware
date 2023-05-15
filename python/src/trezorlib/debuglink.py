@@ -44,7 +44,7 @@ from typing import (
 from mnemonic import Mnemonic
 from typing_extensions import Literal
 
-from . import mapping, messages, protobuf
+from . import device, mapping, messages, protobuf
 from .client import TrezorClient
 from .exceptions import TrezorFailure
 from .log import DUMP_BYTES
@@ -1199,9 +1199,7 @@ def load_device(
     mnemonics = [Mnemonic.normalize_string(m) for m in mnemonic]
 
     if client.features.initialized:
-        raise RuntimeError(
-            "Device is initialized already. Call device.wipe() and try again."
-        )
+        device.wipe(client)
 
     resp = client.call(
         messages.LoadDevice(

@@ -222,8 +222,6 @@ def client(
         should_format = sd_marker.kwargs.get("formatted", True)
         _raw_client.debug.erase_sd_card(format=should_format)
 
-    wipe_device(_raw_client)
-
     setup_params = dict(
         uninitialized=False,
         mnemonic=" ".join(["all"] * 12),
@@ -241,7 +239,10 @@ def client(
         setup_params["passphrase"], str
     )
 
-    if not setup_params["uninitialized"]:
+    if setup_params["uninitialized"]:
+        wipe_device(_raw_client)
+
+    else:
         debuglink.load_device(
             _raw_client,
             mnemonic=setup_params["mnemonic"],  # type: ignore

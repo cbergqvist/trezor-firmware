@@ -6,20 +6,18 @@ if TYPE_CHECKING:
 
 
 async def load_device(ctx: Context, msg: LoadDevice) -> Success:
+    import storage
     import storage.device as storage_device
     from trezor import config
     from trezor.crypto import bip39, slip39
     from trezor.enums import BackupType
     from trezor.messages import Success
+    from apps.base import reload_settings_from_storage
     from apps.management import backup_types
     from trezor.wire import UnexpectedMessage, ProcessError
     from trezor.ui.layouts import confirm_action
 
     mnemonics = msg.mnemonics  # local_cache_attribute
-
-    # _validate
-    if storage_device.is_initialized():
-        raise UnexpectedMessage("Already initialized")
     if not mnemonics:
         raise ProcessError("No mnemonic provided")
 
@@ -41,10 +39,14 @@ async def load_device(ctx: Context, msg: LoadDevice) -> Success:
         ctx,
         "warn_loading_seed",
         "Loading seed",
-        "Loading private seed is not recommended.",
+        "Wipe the device and set up seed from host?",
         "Continue only if you know what you are doing!",
+        hold_danger=True,
     )
     # END _warn
+
+    storage.wipe()
+    reload_settings_from_storage()
 
     if not is_slip39:  # BIP-39
         secret = msg.mnemonics[0].encode()
