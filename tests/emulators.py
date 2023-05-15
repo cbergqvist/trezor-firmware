@@ -33,6 +33,8 @@ CORE_SRC_DIR = ROOT / "core" / "src"
 
 ENV = {"SDL_VIDEODRIVER": "dummy"}
 
+LOGFILE = ROOT / "tests" / "trezor.log"
+
 
 def check_version(tag: str, version_tuple: Tuple[int, int, int]) -> None:
     if tag is not None and tag.startswith("v") and len(tag.split(".")) == 3:
@@ -91,10 +93,13 @@ class EmulatorWrapper:
         else:
             workdir = None
 
+        logfile = open(LOGFILE, "a")
+
         if gen == "legacy":
             self.emulator = LegacyEmulator(
                 executable,
                 self.profile_dir.name,
+                logfile=logfile,
                 storage=storage,
                 headless=headless,
                 auto_interact=auto_interact,
@@ -103,6 +108,7 @@ class EmulatorWrapper:
             self.emulator = CoreEmulator(
                 executable,
                 self.profile_dir.name,
+                logfile=logfile,
                 storage=storage,
                 workdir=workdir,
                 port=port,
