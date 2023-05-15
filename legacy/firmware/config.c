@@ -506,6 +506,10 @@ void config_loadDevice(const LoadDevice *msg) {
 
   if (msg->has_pin) {
     config_changePin("", msg->pin);
+
+    if (msg->has_wipe_code) {
+      config_changeWipeCode(msg->pin, msg->wipe_code);
+    }
   }
 
   if (msg->mnemonics_count) {

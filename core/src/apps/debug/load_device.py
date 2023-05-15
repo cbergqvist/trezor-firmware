@@ -16,6 +16,8 @@ async def load_device(ctx: Context, msg: LoadDevice) -> Success:
     from trezor.ui.layouts import confirm_action
 
     mnemonics = msg.mnemonics  # local_cache_attribute
+    pin = msg.pin  # local_cache_attribute
+    wipe_code = msg.wipe_code  # local_cache_attribute
 
     # _validate
     if storage_device.is_initialized():
@@ -29,6 +31,11 @@ async def load_device(ctx: Context, msg: LoadDevice) -> Success:
             raise ProcessError(
                 "All shares are required to have the same number of words"
             )
+
+    if wipe_code and not pin:
+        raise ProcessError("PIN must be set for wipe code to work.")
+    if wipe_code == pin:
+        raise ProcessError("PIN and wipe code cannot be the same.")
     # END _validate
 
     is_slip39 = backup_types.is_slip39_word_count(word_count)
@@ -72,7 +79,13 @@ async def load_device(ctx: Context, msg: LoadDevice) -> Success:
     )
     storage_device.set_passphrase_enabled(bool(msg.passphrase_protection))
     storage_device.set_label(msg.label or "")
-    if msg.pin:
-        config.change_pin("", msg.pin, None, None)
+    if pin:
+        config.change_pin("", pin, None, None)
+
+        if wipe_code:
+            print("setting wipe code to", wipe_code)
+            config.change_wipe_code(pin, None, wipe_code)
+        else:
+            print("disabling wipe code")
 
     return Success(message="Device loaded")

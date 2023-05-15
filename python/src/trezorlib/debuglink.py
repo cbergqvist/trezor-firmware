@@ -1192,6 +1192,7 @@ def load_device(
     skip_checksum: bool = False,
     needs_backup: bool = False,
     no_backup: bool = False,
+    wipe_code: Optional[str] = None,
 ) -> protobuf.MessageType:
     if isinstance(mnemonic, str):
         mnemonic = [mnemonic]
@@ -1213,6 +1214,7 @@ def load_device(
             skip_checksum=skip_checksum,
             needs_backup=needs_backup,
             no_backup=no_backup,
+            wipe_code=wipe_code,
         )
     )
     client.init_device()

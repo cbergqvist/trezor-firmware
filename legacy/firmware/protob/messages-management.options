@@ -21,6 +21,7 @@ LoadDevice.mnemonics                    max_count:16 max_size:241
 LoadDevice.pin                          max_size:51
 LoadDevice.language                     max_size:17
 LoadDevice.label                        max_size:33
+LoadDevice.wipe_code                    max_size:51
 
 ResetDevice.language                    max_size:17
 ResetDevice.label                       max_size:33

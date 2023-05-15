@@ -3,40 +3,27 @@ from trezorlib.debuglink import TrezorClientDebugLink as Client
 
 from ..common import MNEMONIC12
 from ..emulators import Emulator, EmulatorWrapper
-from ..input_flows import InputFlowSetupDevicePINWIpeCode
 from ..upgrade_tests import core_only, legacy_only
 
 PIN = "1234"
 WIPE_CODE = "9876"
 
 
-def setup_device_legacy(client: Client, pin: str, wipe_code: str) -> None:
+def setup_device(client: Client) -> None:
     device.wipe(client)
     debuglink.load_device(
-        client, MNEMONIC12, pin, passphrase_protection=False, label="WIPECODE"
+        client,
+        MNEMONIC12,
+        PIN,
+        passphrase_protection=False,
+        label="WIPECODE",
+        wipe_code=WIPE_CODE,
     )
-
-    with client:
-        client.use_pin_sequence([PIN, WIPE_CODE, WIPE_CODE])
-        device.change_wipe_code(client)
-
-
-def setup_device_core(client: Client, pin: str, wipe_code: str) -> None:
-    device.wipe(client)
-    debuglink.load_device(
-        client, MNEMONIC12, pin, passphrase_protection=False, label="WIPECODE"
-    )
-
-    with client:
-        IF = InputFlowSetupDevicePINWIpeCode(client, pin, wipe_code)
-        client.set_input_flow(IF.get())
-        device.change_wipe_code(client)
 
 
 @core_only
 def test_wipe_code_activate_core(core_emulator: Emulator):
-    # set up device
-    setup_device_core(core_emulator.client, PIN, WIPE_CODE)
+    setup_device(core_emulator.client)
 
     core_emulator.client.init_device()
     device_id = core_emulator.client.features.device_id
@@ -72,7 +59,7 @@ def test_wipe_code_activate_core(core_emulator: Emulator):
 def test_wipe_code_activate_legacy():
     with EmulatorWrapper("legacy") as emu:
         # set up device
-        setup_device_legacy(emu.client, PIN, WIPE_CODE)
+        setup_device(emu.client)
 
         emu.client.init_device()
         device_id = emu.client.features.device_id

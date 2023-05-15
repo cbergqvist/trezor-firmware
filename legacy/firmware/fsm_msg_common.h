@@ -302,6 +302,21 @@ void fsm_msgLoadDevice(const LoadDevice *msg) {
     }
   }
 
+  if (msg->has_wipe_code && !msg->has_pin) {
+    fsm_sendFailure(FailureType_Failure_DataError,
+                    _("Wipe code provided without PIN"));
+    layoutHome();
+    return;
+  }
+
+  if (msg->has_wipe_code && msg->has_pin && strncmp(msg->pin, msg->wipe_code,
+                                                    sizeof(msg->pin)) == 0) {
+    fsm_sendFailure(FailureType_Failure_DataError,
+                    _("PIN and wipe code must not be the same"));
+    layoutHome();
+    return;
+  }
+
   config_loadDevice(msg);
   fsm_sendSuccess(_("Device loaded"));
   layoutHome();
