@@ -7,7 +7,7 @@ import tools
 BITCOIN_ONLY = ARGUMENTS.get('BITCOIN_ONLY', '0')
 EVERYTHING = BITCOIN_ONLY != '1'
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
-DMA2D =  TREZOR_MODEL in ('T', )
+DMA2D =  TREZOR_MODEL in ('T', 'T3W1')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 
 if TREZOR_MODEL in ('DISC1', ):
@@ -173,7 +173,7 @@ if FEATURE_FLAGS["SECP256K1_ZKP"]:
 SOURCE_MOD += [
     'embed/extmod/modtrezorio/modtrezorio.c',
 ]
-if TREZOR_MODEL in ('T',):
+if TREZOR_MODEL in ('T', 'T3W1'):
     SOURCE_MOD += [
         'embed/extmod/modtrezorio/ff.c',
         'embed/extmod/modtrezorio/ffunicode.c',
@@ -573,7 +573,7 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/*.py',
         exclude=[
             SOURCE_PY_DIR + 'trezor/sdcard.py',
-        ] if TREZOR_MODEL not in ('T',) else []
+        ] if TREZOR_MODEL not in ('T', 'T3W1') else []
     ))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/crypto/*.py'))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/*.py'))
@@ -604,7 +604,7 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'storage/*.py',
         exclude=[
             SOURCE_PY_DIR + 'storage/sd_salt.py',
-        ] if TREZOR_MODEL not in ('T',) else []
+        ] if TREZOR_MODEL not in ('T', 'T3W1') else []
     ))
 
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/messages/__init__.py'))
@@ -628,7 +628,7 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/common/*.py',
         exclude=[
             SOURCE_PY_DIR + 'apps/common/sdcard.py',
-        ] if TREZOR_MODEL not in ('T',) else []
+        ] if TREZOR_MODEL not in ('T', 'T3W1') else []
     ))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py'))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/homescreen/*.py'))
@@ -738,8 +738,12 @@ def cargo_build():
     if DMA2D:
         features.append('dma2d')
 
-    if TREZOR_MODEL in ('T', 'T3W1'):
+    if TREZOR_MODEL in ('T'):
         features.append('touch')
+        features.append('sd_card')
+    if TREZOR_MODEL in ('T3W1'):
+        features.append('touch')
+        features.append('button')
         features.append('sd_card')
     if TREZOR_MODEL in ('R', '1'):
         features.append('button')
