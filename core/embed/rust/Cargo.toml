@@ -27,6 +27,7 @@ debug = ["ui_debug"]
 sbu = []
 sd_card = []
 rgb_led = []
+usb = []
 test = [
     "button",
     "cc",

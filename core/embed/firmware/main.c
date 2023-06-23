@@ -58,7 +58,7 @@
 #include "i2c.h"
 #endif
 #ifdef USE_TOUCH
-#include "touch/touch.h"
+#include "touch.h"
 #endif
 #ifdef USE_SD_CARD
 #include "sdcard.h"
@@ -68,8 +68,8 @@
 #ifdef SYSTEM_VIEW
 #include "systemview.h"
 #endif
+#include "platform.h"
 #include "rng.h"
-#include "stm32.h"
 #include "supervise.h"
 #ifdef USE_SECP256K1_ZKP
 #include "zkp_context.h"
