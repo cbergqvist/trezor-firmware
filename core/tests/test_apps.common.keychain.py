@@ -74,9 +74,7 @@ class TestKeychain(unittest.TestCase):
         cache.set(cache.APP_COMMON_SEED, seed)
 
         schema = PathSchema.parse("m/44'/1'", 0)
-        keychain = await_result(
-            get_keychain(wire.DUMMY_CONTEXT, "secp256k1", [schema])
-        )
+        keychain = await_result(get_keychain(wire.DUMMY_CONTEXT, "secp256k1", [schema]))
 
         # valid path:
         self.assertIsNotNone(keychain.derive([H_(44), H_(1)]))

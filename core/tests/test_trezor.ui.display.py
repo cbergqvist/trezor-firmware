@@ -4,7 +4,6 @@ from trezor.ui import display
 
 
 class TestDisplay(unittest.TestCase):
-
     def test_clear(self):
         display.clear()
 
@@ -29,5 +28,5 @@ class TestDisplay(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
