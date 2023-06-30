@@ -24,96 +24,50 @@
 #include <stdlib.h>
 #include "secbool.h"
 
-// see docs/memory.md for more information
+#define FLASH_OTP_NUM_BLOCKS 16
+#define FLASH_OTP_BLOCK_SIZE 32
 
-#if defined STM32F427xx || defined STM32F429xx
-#define FLASH_SECTOR_COUNT 24
-#elif defined STM32F405xx
-#define FLASH_SECTOR_COUNT 12
-#else
-#error Unsupported MCU
+#ifndef STM32U5A9xx
+#define FLASH_BYTE_ACCESS 1
 #endif
 
-#define FLASH_SECTOR_BOARDLOADER_START 0
-//                                           1
-#define FLASH_SECTOR_BOARDLOADER_END 2
+typedef struct {
+  uint16_t first_sector;
+  uint16_t num_sectors;
+} flash_subarea_t;
 
-//                                           3
-
-#if defined TREZOR_MODEL_T || defined TREZOR_MODEL_R || \
-    defined TREZOR_MODEL_DISC1
-#define FLASH_SECTOR_STORAGE_1 4
-#define FLASH_SECTOR_STORAGE_2 16
-#elif defined TREZOR_MODEL_1
-#define FLASH_SECTOR_STORAGE_1 2
-#define FLASH_SECTOR_STORAGE_2 3
-#else
-#error Unknown Trezor model
-#endif
-
-#define FLASH_SECTOR_BOOTLOADER 5
-
-#define FLASH_SECTOR_FIRMWARE_START 6
-//                                           7
-//                                           8
-//                                           9
-//                                          10
-#define FLASH_SECTOR_FIRMWARE_END 11
-
-#define FLASH_SECTOR_UNUSED_START 12
-//                                          13
-//                                          14
-#define FLASH_SECTOR_UNUSED_END 15
-
-#define FLASH_SECTOR_FIRMWARE_EXTRA_START 17
-//                                          18
-//                                          19
-//                                          20
-//                                          21
-//                                          22
-#define FLASH_SECTOR_FIRMWARE_EXTRA_END 23
-
-#define BOOTLOADER_SECTORS_COUNT (1)
-#define STORAGE_SECTORS_COUNT (2)
-#define FIRMWARE_SECTORS_COUNT (6 + 7)
-
-extern const uint8_t STORAGE_SECTORS[STORAGE_SECTORS_COUNT];
-extern const uint8_t FIRMWARE_SECTORS[FIRMWARE_SECTORS_COUNT];
-
-// note: FLASH_SR_RDERR is STM32F42xxx and STM32F43xxx specific (STM32F427)
-// (reference RM0090 section 3.7.5)
-#if !defined STM32F427xx && !defined STM32F429xx
-#define FLASH_SR_RDERR 0
-#endif
-
-#define FLASH_STATUS_ALL_FLAGS                                            \
-  (FLASH_SR_RDERR | FLASH_SR_PGSERR | FLASH_SR_PGPERR | FLASH_SR_PGAERR | \
-   FLASH_SR_WRPERR | FLASH_SR_SOP | FLASH_SR_EOP)
+typedef struct {
+  flash_subarea_t subarea[4];
+  uint8_t num_subareas;
+} flash_area_t;
 
 void flash_init(void);
 
 secbool __wur flash_unlock_write(void);
 secbool __wur flash_lock_write(void);
 
-const void *flash_get_address(uint8_t sector, uint32_t offset, uint32_t size);
-uint32_t flash_sector_size(uint8_t sector);
-secbool __wur flash_erase_sectors(const uint8_t *sectors, int len,
-                                  void (*progress)(int pos, int len));
-static inline secbool flash_erase(uint8_t sector) {
-  return flash_erase_sectors(&sector, 1, NULL);
-}
-secbool __wur flash_write_byte(uint8_t sector, uint32_t offset, uint8_t data);
-secbool __wur flash_write_word(uint8_t sector, uint32_t offset, uint32_t data);
+const void *flash_get_address(uint16_t sector, uint32_t offset, uint32_t size);
+uint32_t flash_sector_size(uint16_t sector);
+uint16_t flash_total_sectors(const flash_area_t *area);
+int flash_get_sector_num(const flash_area_t *area, uint32_t sector_inner_num);
 
-#define FLASH_OTP_NUM_BLOCKS 16
-#define FLASH_OTP_BLOCK_SIZE 32
+const void *flash_area_get_address(const flash_area_t *area, uint32_t offset,
+                                   uint32_t size);
+uint32_t flash_area_get_size(const flash_area_t *area);
 
-// OTP blocks allocation
-#define FLASH_OTP_BLOCK_BATCH 0
-#define FLASH_OTP_BLOCK_BOOTLOADER_VERSION 1
-#define FLASH_OTP_BLOCK_VENDOR_HEADER_LOCK 2
-#define FLASH_OTP_BLOCK_RANDOMNESS 3
-#define FLASH_OTP_BLOCK_DEVICE_VARIANT 4
+secbool __wur flash_area_erase(const flash_area_t *area,
+                               void (*progress)(int pos, int len));
+secbool __wur flash_area_erase_bulk(const flash_area_t *area, int count,
+                                    void (*progress)(int pos, int len));
+
+#if defined FLASH_BYTE_ACCESS
+secbool __wur flash_area_write_byte(const flash_area_t *area, uint32_t offset,
+                                    uint8_t data);
+secbool __wur flash_area_write_word(const flash_area_t *area, uint32_t offset,
+                                    uint32_t data);
+#endif
+secbool __wur flash_area_write_quadword(const flash_area_t *area,
+                                        uint32_t offset, const uint32_t *data);
 
 secbool __wur flash_otp_read(uint8_t block, uint8_t offset, uint8_t *data,
                              uint8_t datalen);

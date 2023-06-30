@@ -28,11 +28,80 @@
 
 #include "common.h"
 #include "flash.h"
+#include "model.h"
 #include "profile.h"
 
 #ifndef FLASH_FILE
 #define FLASH_FILE profile_flash_path()
 #endif
+
+#if defined STM32F427xx || defined STM32F429xx
+#define FLASH_SECTOR_COUNT 24
+#elif defined STM32F405x
+#define FLASH_SECTOR_COUNT 12
+#else
+#error Unknown MCU
+#endif
+
+const flash_area_t STORAGE_AREAS[STORAGE_AREAS_COUNT] = {
+    {
+        .num_subareas = 1,
+        .subarea[0] =
+            {
+                .first_sector = 4,
+                .num_sectors = 1,
+            },
+    },
+    {
+        .num_subareas = 1,
+        .subarea[0] =
+            {
+                .first_sector = 16,
+                .num_sectors = 1,
+            },
+    },
+};
+
+const flash_area_t BOARDLOADER_AREA = {
+    .num_subareas = 1,
+    .subarea[0] =
+        {
+            .first_sector = 0,
+            .num_sectors = 3,
+        },
+};
+
+const flash_area_t BOOTLOADER_AREA = {
+    .num_subareas = 1,
+    .subarea[0] =
+        {
+            .first_sector = 5,
+            .num_sectors = 1,
+        },
+};
+
+const flash_area_t FIRMWARE_AREA = {
+    .num_subareas = 2,
+    .subarea[0] =
+        {
+            .first_sector = 6,
+            .num_sectors = 6,
+        },
+    .subarea[1] =
+        {
+            .first_sector = 17,
+            .num_sectors = 7,
+        },
+};
+
+const flash_area_t ALL_WIPE_AREA = {
+    .num_subareas = 1,
+    .subarea[0] =
+        {
+            .first_sector = 3,
+            .num_sectors = 21,
+        },
+};
 
 static const uint32_t FLASH_SECTOR_TABLE[FLASH_SECTOR_COUNT + 1] = {
     [0] = 0x08000000,   // - 0x08003FFF |  16 KiB
@@ -66,27 +135,6 @@ static const uint32_t FLASH_SECTOR_TABLE[FLASH_SECTOR_COUNT + 1] = {
 #else
 #error Unknown Trezor model
 #endif
-};
-
-const uint8_t FIRMWARE_SECTORS[FIRMWARE_SECTORS_COUNT] = {
-    FLASH_SECTOR_FIRMWARE_START,
-    7,
-    8,
-    9,
-    10,
-    FLASH_SECTOR_FIRMWARE_END,
-    FLASH_SECTOR_FIRMWARE_EXTRA_START,
-    18,
-    19,
-    20,
-    21,
-    22,
-    FLASH_SECTOR_FIRMWARE_EXTRA_END,
-};
-
-const uint8_t STORAGE_SECTORS[STORAGE_SECTORS_COUNT] = {
-    FLASH_SECTOR_STORAGE_1,
-    FLASH_SECTOR_STORAGE_2,
 };
 
 static uint8_t *FLASH_BUFFER = NULL;
@@ -145,7 +193,7 @@ secbool flash_unlock_write(void) { return sectrue; }
 
 secbool flash_lock_write(void) { return sectrue; }
 
-const void *flash_get_address(uint8_t sector, uint32_t offset, uint32_t size) {
+const void *flash_get_address(uint16_t sector, uint32_t offset, uint32_t size) {
   if (sector >= FLASH_SECTOR_COUNT) {
     return NULL;
   }
@@ -157,11 +205,90 @@ const void *flash_get_address(uint8_t sector, uint32_t offset, uint32_t size) {
   return FLASH_BUFFER + addr - FLASH_SECTOR_TABLE[0];
 }
 
-uint32_t flash_sector_size(uint8_t sector) {
+uint32_t flash_sector_size(uint16_t sector) {
   if (sector >= FLASH_SECTOR_COUNT) {
     return 0;
   }
   return FLASH_SECTOR_TABLE[sector + 1] - FLASH_SECTOR_TABLE[sector];
+}
+
+uint16_t flash_total_sectors(const flash_area_t *area) {
+  uint16_t total = 0;
+  for (int i = 0; i < area->num_subareas; i++) {
+    total += area->subarea[i].num_sectors;
+  }
+  return total;
+}
+
+int flash_get_sector_num(const flash_area_t *area, uint32_t sector_inner_num) {
+  uint16_t sector = 0;
+  uint16_t remaining = sector_inner_num;
+  for (int i = 0; i < area->num_subareas; i++) {
+    if (remaining < area->subarea[i].num_sectors) {
+      sector = area->subarea[i].first_sector + remaining;
+      return sector;
+    } else {
+      remaining -= area->subarea[i].num_sectors;
+    }
+  }
+
+  return -1;
+}
+
+uint32_t flash_subarea_get_size(const flash_subarea_t *subarea) {
+  uint32_t size = 0;
+  for (int s = 0; s < subarea->num_sectors; s++) {
+    size += flash_sector_size(subarea->first_sector + s);
+  }
+  return size;
+}
+
+uint32_t flash_area_get_size(const flash_area_t *area) {
+  uint32_t size = 0;
+  for (int i = 0; i < area->num_subareas; i++) {
+    size += flash_subarea_get_size(&area->subarea[i]);
+  }
+  return size;
+}
+
+const void *flash_area_get_address(const flash_area_t *area, uint32_t offset,
+                                   uint32_t size) {
+  uint32_t tmp_offset = offset;
+
+  for (int i = 0; i < area->num_subareas; i++) {
+    uint16_t sector = area->subarea[i].first_sector;
+
+    uint32_t sub_size = flash_subarea_get_size(&area->subarea[i]);
+    if (tmp_offset >= sub_size) {
+      tmp_offset -= sub_size;
+      continue;
+    }
+
+    // in correct subarea
+
+    for (int s = 0; s < area->subarea[i].num_sectors; s++) {
+      const uint32_t sector_size = flash_sector_size(sector);
+      if (tmp_offset >= sector_size) {
+        tmp_offset -= sector_size;
+        sector++;
+
+        if (s == area->subarea[i].num_sectors - 1) {
+          return NULL;
+        }
+        continue;
+      }
+      // in correct sector
+      break;
+    }
+
+    const void *addr = flash_get_address(sector, tmp_offset, size);
+    const void *area_end = flash_get_address(sector + 1, 0, 0);
+    if ((size_t)addr + size > (size_t)area_end) {
+      return NULL;
+    }
+    return addr;
+  }
+  return NULL;
 }
 
 secbool flash_erase_sectors(const uint8_t *sectors, int len,
@@ -179,6 +306,78 @@ secbool flash_erase_sectors(const uint8_t *sectors, int len,
       progress(i + 1, len);
     }
   }
+  return sectrue;
+}
+
+secbool flash_area_erase(const flash_area_t *area,
+                         void (*progress)(int pos, int len)) {
+  ensure(flash_unlock_write(), NULL);
+
+  int total_sectors = 0;
+  int done_sectors = 0;
+  for (int i = 0; i < area->num_subareas; i++) {
+    total_sectors += area->subarea[i].num_sectors;
+  }
+
+  if (progress) {
+    progress(0, total_sectors);
+  }
+
+  for (int s = 0; s < area->num_subareas; s++) {
+    for (int i = 0; i < area->subarea[s].num_sectors; i++) {
+      int sector = area->subarea[s].first_sector + i;
+
+      const uint32_t offset =
+          FLASH_SECTOR_TABLE[sector] - FLASH_SECTOR_TABLE[0];
+      const uint32_t size =
+          FLASH_SECTOR_TABLE[sector + 1] - FLASH_SECTOR_TABLE[sector];
+      memset(FLASH_BUFFER + offset, 0xFF, size);
+
+      done_sectors++;
+      if (progress) {
+        progress(done_sectors, total_sectors);
+      }
+    }
+  }
+  ensure(flash_lock_write(), NULL);
+  return sectrue;
+}
+
+secbool flash_area_erase_bulk(const flash_area_t *area, int count,
+                              void (*progress)(int pos, int len)) {
+  ensure(flash_unlock_write(), NULL);
+
+  int total_sectors = 0;
+  int done_sectors = 0;
+  for (int a = 0; a < count; a++) {
+    for (int i = 0; i < area[a].num_subareas; i++) {
+      total_sectors += area[a].subarea[i].num_sectors;
+    }
+  }
+
+  if (progress) {
+    progress(0, total_sectors);
+  }
+
+  for (int a = 0; a < count; a++) {
+    for (int s = 0; s < area[a].num_subareas; s++) {
+      for (int i = 0; i < area[a].subarea[s].num_sectors; i++) {
+        int sector = area[a].subarea[s].first_sector + i;
+
+        const uint32_t offset =
+            FLASH_SECTOR_TABLE[sector] - FLASH_SECTOR_TABLE[0];
+        const uint32_t size =
+            FLASH_SECTOR_TABLE[sector + 1] - FLASH_SECTOR_TABLE[sector];
+        memset(FLASH_BUFFER + offset, 0xFF, size);
+
+        done_sectors++;
+        if (progress) {
+          progress(done_sectors, total_sectors);
+        }
+      }
+    }
+  }
+  ensure(flash_lock_write(), NULL);
   return sectrue;
 }
 
@@ -207,6 +406,68 @@ secbool flash_write_word(uint8_t sector, uint32_t offset, uint32_t data) {
   }
   flash[0] = data;
   return sectrue;
+}
+
+secbool flash_area_write_byte(const flash_area_t *area, uint32_t offset,
+                              uint8_t data) {
+  uint32_t tmp_offset = offset;
+  for (int i = 0; i < area->num_subareas; i++) {
+    uint16_t sector = area->subarea[i].first_sector;
+
+    uint32_t sub_size = flash_subarea_get_size(&area->subarea[i]);
+    if (tmp_offset >= sub_size) {
+      tmp_offset -= sub_size;
+      continue;
+    }
+
+    // in correct subarea
+    for (int s = 0; s < area->subarea[i].num_sectors; s++) {
+      const uint32_t sector_size = flash_sector_size(sector);
+      if (tmp_offset >= sector_size) {
+        tmp_offset -= sector_size;
+        sector++;
+
+        if (s == area->subarea[i].num_sectors - 1) {
+          return secfalse;
+        }
+        continue;
+      }
+      // in correct sector
+      return flash_write_byte(sector, tmp_offset, data);
+    }
+  }
+  return secfalse;
+}
+
+secbool flash_area_write_word(const flash_area_t *area, uint32_t offset,
+                              uint32_t data) {
+  uint32_t tmp_offset = offset;
+  for (int i = 0; i < area->num_subareas; i++) {
+    uint16_t sector = area->subarea[i].first_sector;
+
+    uint32_t sub_size = flash_subarea_get_size(&area->subarea[i]);
+    if (tmp_offset >= sub_size) {
+      tmp_offset -= sub_size;
+      continue;
+    }
+
+    // in correct subarea
+    for (int s = 0; s < area->subarea[i].num_sectors; s++) {
+      const uint32_t sector_size = flash_sector_size(sector);
+      if (tmp_offset >= sector_size) {
+        tmp_offset -= sector_size;
+        sector++;
+
+        if (s == area->subarea[i].num_sectors - 1) {
+          return secfalse;
+        }
+        continue;
+      }
+      // in correct sector
+      return flash_write_word(sector, tmp_offset, data);
+    }
+  }
+  return secfalse;
 }
 
 secbool flash_otp_read(uint8_t block, uint8_t offset, uint8_t *data,

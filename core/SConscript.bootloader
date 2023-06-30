@@ -85,6 +85,7 @@ SOURCE_MOD += [
     'embed/lib/display.c',
     'embed/lib/fonts/fonts.c',
     'embed/lib/fonts/font_bitmap.c',
+    'embed/lib/image.c',
     'embed/extmod/modtrezorcrypto/rand.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',

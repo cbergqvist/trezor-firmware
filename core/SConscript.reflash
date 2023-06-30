@@ -57,6 +57,7 @@ SOURCE_MOD += [
     'embed/lib/colors.c',
     'embed/lib/fonts/fonts.c',
     'embed/lib/fonts/font_bitmap.c',
+    'embed/lib/image.c',
     'embed/lib/mini_printf.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
