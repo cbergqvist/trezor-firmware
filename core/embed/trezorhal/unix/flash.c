@@ -470,6 +470,20 @@ secbool flash_area_write_word(const flash_area_t *area, uint32_t offset,
   return secfalse;
 }
 
+secbool flash_area_write_quadword(const flash_area_t *area, uint32_t offset,
+                                  const uint32_t *data) {
+  if (offset % (4 * sizeof(uint32_t))) {  // we write only at 16-byte boundary
+    return secfalse;
+  }
+  for (int i = 0; i < 4; i++) {
+    if (sectrue !=
+        flash_area_write_word(area, offset + i * sizeof(uint32_t), data[i])) {
+      return secfalse;
+    }
+  }
+  return sectrue;
+}
+
 secbool flash_otp_read(uint8_t block, uint8_t offset, uint8_t *data,
                        uint8_t datalen) {
   if (offset + datalen > OTP_BLOCK_SIZE) {
