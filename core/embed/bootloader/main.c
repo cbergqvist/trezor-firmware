@@ -77,8 +77,8 @@ static const uint8_t * const BOOTLOADER_KEYS[] = {
 #define USB_IFACE_NUM 0
 
 typedef enum {
-  CONTINUE = 0,
-  RETURN = 1,
+  CONTINUE_TO_FIRMWARE = 0,
+  RETURN_TO_MENU = 1,
   SHUTDOWN = 2,
 } usb_result_t;
 
@@ -160,7 +160,7 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           hal_delay(100);
           usb_stop();
           usb_deinit();
-          return RETURN;
+          return RETURN_TO_MENU;
         }
         ui_screen_wipe();
         r = process_msg_WipeDevice(USB_IFACE_NUM, msg_size, buf);
@@ -192,7 +192,7 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           hal_delay(100);
           usb_stop();
           usb_deinit();
-          return RETURN;
+          return RETURN_TO_MENU;
         } else if (r == 0) {  // last chunk received
           ui_screen_install_progress_upload(1000);
           ui_screen_done(4, sectrue);
@@ -205,7 +205,7 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           usb_stop();
           usb_deinit();
           ui_screen_boot_empty(true);
-          return CONTINUE;
+          return CONTINUE_TO_FIRMWARE;
         }
         break;
       case 55:  // GetFeatures
@@ -405,21 +405,24 @@ int bootloader_main(void) {
 
     ui_screen_welcome_model();
     hal_delay(1000);
-    while (true) {
-      ui_screen_welcome();
+    ui_screen_welcome();
 
-      // erase storage
-      ensure(flash_erase_sectors(STORAGE_SECTORS, STORAGE_SECTORS_COUNT, NULL),
-             NULL);
+    // erase storage
+    ensure(flash_erase_sectors(STORAGE_SECTORS, STORAGE_SECTORS_COUNT, NULL),
+           NULL);
 
-      // and start the usb loop
-      usb_result_t res = bootloader_usb_loop(NULL, NULL);
-      if (res == CONTINUE) {
+    // and start the usb loop
+    usb_result_t res = bootloader_usb_loop(NULL, NULL);
+    switch (res) {
+      case CONTINUE_TO_FIRMWARE:
         break;
-      }
-      if (res == SHUTDOWN) {
+      case RETURN_TO_MENU:
+        stay_in_bootloader = sectrue;
+        break;
+      default:
+      case SHUTDOWN:
         return 1;
-      }
+        break;
     }
   }
 
@@ -478,10 +481,10 @@ int bootloader_main(void) {
         case SCREEN_WAIT_FOR_HOST:
           screen_connect();
           switch (bootloader_usb_loop(&vhdr, hdr)) {
-            case CONTINUE:
+            case CONTINUE_TO_FIRMWARE:
               continue_to_firmware = true;
               break;
-            case RETURN:
+            case RETURN_TO_MENU:
               screen = SCREEN_INTRO;
               break;
             case SHUTDOWN:
