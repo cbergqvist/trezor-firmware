@@ -40,18 +40,18 @@ def enter_word(
 
 def confirm_recovery(debug: "DebugLink") -> None:
     if debug.model == "T":
-        if not debug.legacy_ui and not debug.legacy_debug:
-            layout = debug.wait_layout()
-            assert layout.title().startswith(
-                ("WALLET RECOVERY", "RECOVER WALLET", "BACKUP CHECK")
-            )
-        debug.click(buttons.OK, wait=True)
+        # New UI do not have this screen anymore
+        if debug.version > (2, 6, 0):
+            if not debug.legacy_ui and not debug.legacy_debug:
+                layout = debug.wait_layout()
+                assert layout.title().startswith(
+                    ("WALLET RECOVERY", "RECOVER WALLET", "BACKUP CHECK")
+                )
+            debug.click(buttons.OK, wait=True)
     elif debug.model == "R":
         layout = debug.wait_layout()
         assert layout.title() == "RECOVER WALLET"
         debug.press_right(wait=True)
-        layout = debug.press_right(wait=True)
-        assert "safe to eject" in layout.text_content()
         debug.press_right()
 
 
@@ -130,7 +130,7 @@ def enter_share(
             # Word entering info
             debug.press_right()
             layout = debug.press_right(wait=True)
-        assert "Slip39Entry" in layout.all_components()
+        assert "MnemonicKeyboard" in layout.all_components()
 
         for word in share.split(" "):
             layout = enter_word(debug, word, is_slip39=True)
@@ -162,7 +162,7 @@ def enter_seed(debug: "DebugLink", seed_words: list[str]) -> None:
         debug.press_right()
 
         layout = debug.press_right(wait=True)
-        assert "Bip39Entry" in layout.all_components()
+        assert "MnemonicKeyboard" in layout.all_components()
 
     for word in seed_words:
         layout = enter_word(debug, word, is_slip39=False)
