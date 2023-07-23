@@ -207,7 +207,7 @@ If the task is cancelled (usually by calling `task.close()`), the awaiter receiv
 It is also possible to register a synchronous finalizer callback via
 `task.set_finalizer`. This is used internally to implement workflow management.
 
-**`loop.chan()`** is a unidirectional communication channel that actually implements two
+**`loop.chan()`** is a bidirectional communication channel that actually implements two
 syscalls:
 
  * **`chan.put()`** sends a value to the channel, and waits until it is picked up
