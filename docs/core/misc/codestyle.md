@@ -13,7 +13,7 @@ See rules for exceptions in the [Exceptions documentation](./exceptions.md).
 
 We prefer Python 3.10 style annotations:
 
-* instead of `List[int]`, use `list[int]`, dtto for `Tuple`, `Dict` and `Set`
+* instead of `List[int]`, use `list[int]`, ditto for `Tuple`, `Dict` and `Set`
 * instead of `Optional[int]`, use `int | None`
 * instead of `Union[int, str]`, use `int | str`
 
